@@ -19,19 +19,30 @@ size = [400, 400]
 screen = pygame.display.set_mode(size)
 
 
+# class to store all the sitting blocks
+class Block_List:
+    pos_s = set()  # set to store positions of the sitting blocks in "top:left" fashion.
+    bl = []  # list to hold all the blocks
+
+    def draw_all(self, surface):
+        for block in self.bl:
+            block.draw(surface)
+
+    def append(self, b):
+        self.bl.append(b)
+        self.pos_s.add(b.block.topleft)
+
+
 class Block(Rect):
     def __init__(self):
         self.block = Rect(20, 20, 20, 20)
 
-    def collide(self, l):
-        pos_dict = {}
-        for b in l:
-            pos_dict[b.block.top] = b.block.left
-            if self.block.bottom in pos_dict and self.block.left == pos_dict[self.block.bottom]:
-                return True
+    def collide_down(self, s):
+        if self.block.bottomleft in s:
+            return True
         return False
 
-
+    # def collide_left(self, l):
 
     def key_press(self):
         key = pygame.key.get_pressed()
@@ -42,6 +53,7 @@ class Block(Rect):
         if key[pygame.K_UP]:
             self.block.move_ip(0, -20)
         if key[pygame.K_DOWN]:
+            # to add instant drop function
             self.block.move_ip(0, 20)
 
     def draw(self, surface):
@@ -51,7 +63,7 @@ class Block(Rect):
 done = False
 clock = pygame.time.Clock()
 
-block_list = []
+block_list = Block_List()
 curr_block = Block()
 
 while not done:
@@ -65,17 +77,16 @@ while not done:
     screen.fill(WHITE)
 
     curr_block.key_press()
+    print(block_list.pos_s, "bottom left pos ", curr_block.block.bottomleft)
 
-    print("sitting block top and left position", curr_block.block.topleft)
-
-    if curr_block.block.bottom > 300 or curr_block.collide(block_list):
-        block_list.append(curr_block)   # add to sitting blocks then create a new block
+    if curr_block.block.bottom > 300 or curr_block.collide_down(block_list.pos_s):
+        block_list.append(curr_block)  # add to sitting blocks then create a new block
+        print(len(block_list.bl))
         curr_block = Block()
 
     curr_block.draw(screen)  # draw the falling block
 
-    for b in block_list:
-        b.draw(screen)  # draw all the siting blocks
+    block_list.draw_all(screen)  # draw all the siting blocks
 
     pygame.display.flip()
 
