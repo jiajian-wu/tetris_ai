@@ -18,21 +18,11 @@ RED = (255, 0, 0)
 size = [400, 400]
 screen = pygame.display.set_mode(size)
 
-
-
-
-
-
-
-
-# Loop until the user clicks the close button.
 done = False
 clock = pygame.time.Clock()
 
-
 blocks = []
-curr_block = Rect(10, 10, 10, 10)
-blocks.append(curr_block)
+curr_block = Rect(20, 20, 20, 20)
 
 while not done:
 
@@ -54,12 +44,14 @@ while not done:
     if key[pygame.K_DOWN]:
         curr_block.move_ip(0, 10)
 
-    if curr_block.bottom > 300:
-        curr_block = Rect(10, 10, 10, 10)
-        blocks.append(curr_block)
+    if curr_block.bottom > 300 or curr_block.collidelist(blocks) != -1:
+        blocks.append(curr_block)   # add to sitting blocks then create a new block
+        curr_block = Rect(20, 20, 20, 20)
+
+    pygame.draw.rect(screen, GREEN, curr_block)  # draw the falling block
 
     for b in blocks:
-        pygame.draw.rect(screen, GREEN, b)
+        pygame.draw.rect(screen, GREEN, b)  # draw all the siting blocks
 
     pygame.display.flip()
 
