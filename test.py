@@ -15,8 +15,8 @@ GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 
 # Set the height and width of the screen
-block_size = 50
-row, col = 6, 6
+block_size = 20
+row, col = 12, 12
 color = RED
 size = [block_size * col, block_size * row]
 screen = pygame.display.set_mode(size)
@@ -30,13 +30,15 @@ class Block_List:
 
     def draw_all(self, surface):
         for block in self.d.values():
-            block.draw(surface)
+            pygame.draw.rect(surface, RED, block)
 
     def append(self, b):
-        self.d[b.block.topleft] = b
+        for item in b.shape:
+            self.d[item.topleft] = item
 
     def clear_row(self):
         count = 0
+        row_cleared = 0
         for i in range(row):
             for j in range(col):
                 if (j * block_size, i * block_size) in self.d:
@@ -44,34 +46,54 @@ class Block_List:
             if count == col:
                 for c in range(col):
                     del self.d[(c * block_size, i * block_size)]
+                row_cleared += 1
             count = 0
+    # need to add functionality to move down the blocks above.
 
 
 class Block(Rect):
+
     def __init__(self):
-        self.block = Rect(0, block_size, block_size, block_size)
+        self.shape = []     # list to hold blocks which makes up the shape
+        self.block1 = Rect(block_size, 0, block_size, block_size)   # left, top, width, height
+        self.block2 = Rect(block_size * 2, 0, block_size, block_size)
+        self.block3 = Rect(block_size * 3, 0, block_size, block_size)
+        self.block4 = Rect(block_size * 4, 0, block_size, block_size)
+        self.shape.append(self.block1)
+        self.shape.append(self.block2)
+        self.shape.append(self.block3)
+        self.shape.append(self.block4)
 
     def collide_down(self, d):
-        if self.block.bottomleft in d:
-            return True
+        for item in self.shape:
+            if item.bottomleft in d:
+                return True
         return False
 
     # def collide_left(self, l):
 
     def key_press(self):
         key = pygame.key.get_pressed()
-        if key[pygame.K_LEFT]:
-            self.block.move_ip(-block_size, 0)
-        if key[pygame.K_RIGHT]:
-            self.block.move_ip(block_size, 0)
-        if key[pygame.K_UP]:
-            self.block.move_ip(0, -block_size)
-        if key[pygame.K_DOWN]:
-            # to add instant drop function
-            self.block.move_ip(0, block_size)
+
+        for item in self.shape:
+            if key[pygame.K_LEFT]:
+                item.move_ip(-block_size, 0)
+
+            if key[pygame.K_RIGHT]:
+                item.move_ip(block_size, 0)
+
+            if key[pygame.K_UP]:
+                item.move_ip(0, -block_size)
+
+            if key[pygame.K_DOWN]:
+                item.move_ip(0, block_size)
 
     def draw(self, surface):
-        pygame.draw.rect(surface, color, self.block)
+        for item in self.shape:
+            pygame.draw.rect(surface, color, item)
+
+    def get_bottom(self):
+        return self.block4.bottom
 
 
 done = False
@@ -91,16 +113,15 @@ while not done:
     screen.fill(WHITE)
 
     curr_block.key_press()
-    print(block_list.d, "bottom left pos ", curr_block.block.bottomleft)
 
-    if curr_block.block.bottom >= block_size * row or curr_block.collide_down(block_list.d):
+    if curr_block.get_bottom() >= block_size * row or curr_block.collide_down(block_list.d):
         block_list.append(curr_block)  # add to sitting blocks then create a new block
         block_list.clear_row()
         curr_block = Block()
 
     curr_block.draw(screen)  # draw the falling block
 
-    block_list.draw_all(screen)  # draw all the siting blocks
+    block_list.draw_all(screen)
 
     pygame.display.flip()
 
