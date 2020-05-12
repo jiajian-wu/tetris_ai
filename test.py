@@ -57,7 +57,7 @@ class Block_List:
 
         block_list = self.d.items()
         block_list = sorted(block_list, key=lambda x: x[0][1], reverse=True)
-        print(block_list)
+        # print(block_list)
         if row_cleared != 0:
             for item in block_list:
                 if item[0][1] < block_size * top_cleared_row:
