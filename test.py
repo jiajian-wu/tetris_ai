@@ -13,20 +13,22 @@ WHITE = (255, 255, 255)
 BLUE = (0, 0, 255)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
+ORANGE = (255, 165, 0)
 
 # Set the height and width of the screen
 block_size = 30
-row, col = 12, 9
+row, col = 16, 9
 color = BLUE
 size = [block_size * col, block_size * row]
 screen = pygame.display.set_mode(size)
+
 ############################################
 
 # class to store all the sitting blocks
 
 
 class Block_List:
-    d = {}  # dictionary to hold sitting blocks' positions and themselves in "(x,y):block" fashion
+    d = {}  # dictionary to hold sitting blocks' positions and themselves in "(left,top):(block, color)" fashion
 
     def draw_all(self, surface):
         for pos, key in self.d.items():
@@ -55,9 +57,9 @@ class Block_List:
 
         block_list = self.d.items()
         block_list = sorted(block_list, key=lambda x: x[0][1], reverse=True)
-        # print(block_list)
+        print(block_list)
         if row_cleared != 0:
-            for item in block_list:     # item[0] stores the positions, item[1] stores the actual rectangle
+            for item in block_list:
                 if item[0][1] < block_size * top_cleared_row:
                     self.d[item[0]][0].move_ip(0, block_size * row_cleared)    # move the rectangle
                     self.d[item[1][0].topleft] = (item[1][0], item[1][1])  # reassign new positions
@@ -74,7 +76,7 @@ class Block(Rect):
     def __init__(self):
         self.shape = []     # list to hold blocks which makes up the shape
         self.type = ""
-        self.color = random.choice([BLUE, GREEN, RED])
+        self.color = random.choice([BLUE, GREEN, RED, ORANGE])
         draw = random.randint(1, 2)
         if draw == 1:
             self.type = "I"
@@ -89,12 +91,22 @@ class Block(Rect):
             self.block2 = Rect(block_size * 2, 0, block_size, block_size)
             self.block3 = Rect(block_size, block_size, block_size, block_size)
             self.block4 = Rect(block_size * 2, block_size, block_size, block_size)
+
         self.shape.append(self.block1)
         self.shape.append(self.block2)
         self.shape.append(self.block3)
         self.shape.append(self.block4)
 
+        # elif draw == 3:
+        #     self.type = "T"
+        #     self.state = 1
+        #     self.block1 = Rect(block_size, block_size, block_size, block_size)
+        #     self.block2 = Rect(block_size * 2, block_size, block_size, block_size)
+        #     self.block3 = Rect(block_size * 3, block_size, block_size, block_size)
+        #     self.block4 = Rect(block_size * 2, 0, block_size, block_size)
+
     def rotate(self):
+        # prohibit rotation if finished positions already occupied !!!
         if self.type == "I":
             if self.state == 1:
                 self.block1.move_ip(block_size, -block_size * 2)
@@ -111,24 +123,41 @@ class Block(Rect):
         elif self.type == "square":
             pass
 
+        # elif self.type == "T":
+        #     if self.state == 1:
+
     def collide_down(self, d):
         for item in self.shape:
             if item.bottomleft in d:
                 return True
         return False
 
-    # def collide_left(self, l):
-
-    def key_press(self):
-        key = pygame.key.get_pressed()
-
-        if key[pygame.K_LEFT]:
+    def move_left(self, d):
+        clear_to_move = True
+        for item in self.shape:
+            if (item.topleft[0] - block_size, item.topleft[1]) in d or item.left == 0:
+                clear_to_move = False
+        if clear_to_move:
             for item in self.shape:
                 item.move_ip(-block_size, 0)
 
-        if key[pygame.K_RIGHT]:
+    def move_right(self, d):
+        clear_to_move = True
+        for item in self.shape:
+            if (item.topleft[0] + block_size, item.topleft[1]) in d or item.right == block_size * col:
+                clear_to_move = False
+        if clear_to_move:
             for item in self.shape:
                 item.move_ip(block_size, 0)
+
+    def key_press(self, d):
+        key = pygame.key.get_pressed()
+
+        if key[pygame.K_LEFT]:
+            self.move_left(d)
+
+        if key[pygame.K_RIGHT]:
+            self.move_right(d)
 
         if key[pygame.K_DOWN]:
             for item in self.shape:
@@ -161,7 +190,7 @@ while not done:
 
     screen.fill(WHITE)
 
-    curr_block.key_press()
+    curr_block.key_press(block_list.d)
 
     if curr_block.get_bottom() >= block_size * row or curr_block.collide_down(block_list.d):
         block_list.append(curr_block, curr_block.color)  # add to sitting blocks then create a new block
