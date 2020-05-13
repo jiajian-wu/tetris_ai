@@ -17,7 +17,7 @@ ORANGE = (255, 165, 0)
 
 # Set the height and width of the screen
 block_size = 30
-row, col = 16, 9
+row, col = 25, 9
 color = BLUE
 size = [block_size * col, block_size * row]
 screen = pygame.display.set_mode(size)
@@ -150,6 +150,10 @@ class Block(Rect):
             for item in self.shape:
                 item.move_ip(block_size, 0)
 
+    def move_down(self):
+        for item in self.shape:
+            item.move_ip(0, block_size)
+
     def key_press(self, d):
         key = pygame.key.get_pressed()
 
@@ -158,10 +162,6 @@ class Block(Rect):
 
         if key[pygame.K_RIGHT]:
             self.move_right(d)
-
-        if key[pygame.K_DOWN]:
-            for item in self.shape:
-                item.move_ip(0, block_size)
 
         if key[pygame.K_UP]:
             self.rotate()
@@ -191,6 +191,7 @@ while not done:
     screen.fill(WHITE)
 
     curr_block.key_press(block_list.d)
+    curr_block.move_down()
 
     if curr_block.get_bottom() >= block_size * row or curr_block.collide_down(block_list.d):
         block_list.append(curr_block, curr_block.color)  # add to sitting blocks then create a new block
