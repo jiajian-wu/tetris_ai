@@ -19,14 +19,21 @@ ORANGE = (255, 165, 0)
 block_size = 30
 row, col = 25, 9
 color = BLUE
-size = [block_size * col, block_size * row]
+size = [block_size * (col + 6), block_size * row]
 screen = pygame.display.set_mode(size)
+
+
+def draw_separate_line(s):   # left, top, width, height
+    pygame.draw.rect(s, BLACK, Rect(block_size * 9, 0, block_size/5, block_size * row))
+
+
+def draw_next_block(b, surface):
+    for item in b.shape:
+        pygame.draw.rect(surface, b.color, Rect(item.left + block_size * 9, item.top + block_size * 2, block_size, block_size))
 
 ############################################
 
 # class to store all the sitting blocks
-
-
 class Block_List:
     d = {}  # dictionary to hold sitting blocks' positions and themselves in "(left,top):(block, color)" fashion
 
@@ -179,16 +186,20 @@ clock = pygame.time.Clock()
 
 block_list = Block_List()
 curr_block = Block()
+next_block = Block()
 
 while not done:
 
-    clock.tick(10)
+    clock.tick(8)
 
     for event in pygame.event.get():  # User did something
         if event.type == pygame.QUIT:  # If user clicked close
             done = True  # Flag that we are done so we exit this loop
 
+
     screen.fill(WHITE)
+    draw_separate_line(screen)
+    draw_next_block(next_block, screen)
 
     curr_block.key_press(block_list.d)
     curr_block.move_down()
@@ -196,7 +207,8 @@ while not done:
     if curr_block.get_bottom() >= block_size * row or curr_block.collide_down(block_list.d):
         block_list.append(curr_block, curr_block.color)  # add to sitting blocks then create a new block
         block_list.clear_row()
-        curr_block = Block()
+        curr_block = next_block
+        next_block = Block()
 
     curr_block.draw(screen)  # draw the falling block
 
