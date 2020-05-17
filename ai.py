@@ -13,31 +13,27 @@ WHITE = (255, 255, 255)
 BLUE = (0, 0, 255)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
-ORANGE = (255, 215, 0)
+ORANGE = (255, 165, 0)
 
 # Set the height and width of the screen
 block_size = 30
 row, col = 25, 9
 color = BLUE
-size = [block_size * (col + 6), block_size * row]
+size = [block_size * col, block_size * row]
 screen = pygame.display.set_mode(size)
 
-
-def draw_separate_line(s):   # left, top, width, height
-    pygame.draw.rect(s, BLACK, Rect(block_size * 9, 0, block_size/5, block_size * row))
-
-
-def draw_next_block(b, surface):
-    for item in b.shape:
-        pygame.draw.rect(surface, b.color, Rect(item.left + block_size * 9, item.top + block_size * 2, block_size, block_size))
-
-
 ############################################
+
 # class to store all the sitting blocks
+
+
 class Block_List:
-    # dictionary to hold sitting blocks' positions and themselves in "(left,top):(block, color)" fashion
+    # dictionary to hold sitting blocks' positions and themselves in
+    # "(left,top):(block, color)" fashion
     block_dict = {}
     block_list = []
+    pos_matrix = [[0] * col] * row     # [[0]*10]*10
+    # def find_curr_top(self):    # find top position
 
     def draw_all(self, surface):
         for pos, key in self.block_dict.items():
@@ -62,11 +58,11 @@ class Block_List:
                 if i < top_cleared_row:
                     top_cleared_row = i
             count = 0
-        # print("\nthis position above should move: ", top_cleared_row * block_size)
 
+        # move the blocks down after row-clearing
+        # create a list from dict since dict can't keep track of order of positions.
         self.block_list = self.block_dict.items()
         self.block_list = sorted(self.block_list, key=lambda x: x[0][1], reverse=True)
-        # print(block_list)
         if row_cleared != 0:
             for item in self.block_list:
                 if item[0][1] < block_size * top_cleared_row:
@@ -76,6 +72,12 @@ class Block_List:
 
         self.block_list = self.block_dict.items()
         self.block_list = sorted(self.block_list, key=lambda x: x[0][1], reverse=True)
+        for item in self.block_list:
+            print(item[0], end=" ")
+        print(self.pos_matrix)
+        print("\n")
+
+    # def print_pos_matrix(self):
 
 
 class Block(Rect):
@@ -179,13 +181,17 @@ class Block(Rect):
     def get_bottom(self):
         return self.block4.bottom
 
+    # def move_right_test(self):
+    #     for item in self.shape:
+    #         if item.right != block_size * col:
+    #             item.move_ip(block_size, 0)
+
 
 done = False
 clock = pygame.time.Clock()
 
 block_list = Block_List()
 curr_block = Block()
-next_block = Block()
 
 while not done:
 
@@ -195,19 +201,16 @@ while not done:
         if event.type == pygame.QUIT:  # If user clicked close
             done = True  # Flag that we are done so we exit this loop
 
-
     screen.fill(WHITE)
-    draw_separate_line(screen)
-    draw_next_block(next_block, screen)
 
     curr_block.key_press(block_list.block_dict)
     curr_block.move_down()
+    # curr_block.move_right_test()
 
     if curr_block.get_bottom() >= block_size * row or curr_block.collide_down(block_list.block_dict):
         block_list.append(curr_block, curr_block.color)  # add to sitting blocks then create a new block
         block_list.clear_row()
-        curr_block = next_block
-        next_block = Block()
+        curr_block = Block()
 
     curr_block.draw(screen)  # draw the falling block
 
@@ -216,4 +219,3 @@ while not done:
     pygame.display.flip()
 
 pygame.quit()
-
