@@ -31,19 +31,21 @@ def draw_next_block(b, surface):
     for item in b.shape:
         pygame.draw.rect(surface, b.color, Rect(item.left + block_size * 9, item.top + block_size * 2, block_size, block_size))
 
-############################################
 
+############################################
 # class to store all the sitting blocks
 class Block_List:
-    d = {}  # dictionary to hold sitting blocks' positions and themselves in "(left,top):(block, color)" fashion
+    # dictionary to hold sitting blocks' positions and themselves in "(left,top):(block, color)" fashion
+    block_dict = {}
+    block_list = []
 
     def draw_all(self, surface):
-        for pos, key in self.d.items():
+        for pos, key in self.block_dict.items():
             pygame.draw.rect(surface, key[1], key[0])
 
     def append(self, b, c):
         for item in b.shape:
-            self.d[item.topleft] = (item, c)
+            self.block_dict[item.topleft] = (item, c)
 
     def clear_row(self):
         count = 0
@@ -51,32 +53,29 @@ class Block_List:
         top_cleared_row = 10000
         for i in range(row):
             for j in range(col):
-                if (j * block_size, i * block_size) in self.d:
+                if (j * block_size, i * block_size) in self.block_dict:
                     count += 1
             if count == col:
                 for c in range(col):
-                    del self.d[(c * block_size, i * block_size)]
+                    del self.block_dict[(c * block_size, i * block_size)]
                 row_cleared += 1
                 if i < top_cleared_row:
                     top_cleared_row = i
             count = 0
         # print("\nthis position above should move: ", top_cleared_row * block_size)
 
-        block_list = self.d.items()
-        block_list = sorted(block_list, key=lambda x: x[0][1], reverse=True)
+        self.block_list = self.block_dict.items()
+        self.block_list = sorted(self.block_list, key=lambda x: x[0][1], reverse=True)
         # print(block_list)
         if row_cleared != 0:
-            for item in block_list:
+            for item in self.block_list:
                 if item[0][1] < block_size * top_cleared_row:
-                    self.d[item[0]][0].move_ip(0, block_size * row_cleared)    # move the rectangle
-                    self.d[item[1][0].topleft] = (item[1][0], item[1][1])  # reassign new positions
-                    del self.d[item[0]]    # delete old one
-        # if row_cleared != 0:
-        #     for pos, piece in list(self.d.items()):
-        #         if pos[1] < block_size * top_cleared_row:
-        #             piece.move_ip(0, block_size * row_cleared)
-        #             self.d[piece.topleft] = piece
-        #             del self.d[pos]
+                    self.block_dict[item[0]][0].move_ip(0, block_size * row_cleared)    # move the rectangle
+                    self.block_dict[item[1][0].topleft] = (item[1][0], item[1][1])  # reassign new positions
+                    del self.block_dict[item[0]]    # delete old one
+
+        self.block_list = self.block_dict.items()
+        self.block_list = sorted(self.block_list, key=lambda x: x[0][1], reverse=True)
 
 
 class Block(Rect):
@@ -190,7 +189,7 @@ next_block = Block()
 
 while not done:
 
-    clock.tick(8)
+    clock.tick(10)
 
     for event in pygame.event.get():  # User did something
         if event.type == pygame.QUIT:  # If user clicked close
@@ -201,10 +200,10 @@ while not done:
     draw_separate_line(screen)
     draw_next_block(next_block, screen)
 
-    curr_block.key_press(block_list.d)
+    curr_block.key_press(block_list.block_dict)
     curr_block.move_down()
 
-    if curr_block.get_bottom() >= block_size * row or curr_block.collide_down(block_list.d):
+    if curr_block.get_bottom() >= block_size * row or curr_block.collide_down(block_list.block_dict):
         block_list.append(curr_block, curr_block.color)  # add to sitting blocks then create a new block
         block_list.clear_row()
         curr_block = next_block
@@ -217,3 +216,4 @@ while not done:
     pygame.display.flip()
 
 pygame.quit()
+
