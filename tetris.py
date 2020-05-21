@@ -29,7 +29,7 @@ def draw_separate_line(s):   # left, top, width, height
 
 def draw_next_block(b, surface):
     for item in b.shape:
-        pygame.draw.rect(surface, b.color, Rect(item.left + block_size * 9, item.top + block_size * 2, block_size, block_size))
+        pygame.draw.rect(surface, b.color, Rect(item.left + block_size * 10, item.top + block_size * 2, block_size, block_size))
 
 
 ############################################
@@ -87,16 +87,16 @@ class Block(Rect):
         if draw == 1:
             self.type = "I"
             self.state = 1
-            self.block1 = Rect(block_size, 0, block_size, block_size)   # left, top, width, height
-            self.block2 = Rect(block_size * 2, 0, block_size, block_size)
-            self.block3 = Rect(block_size * 3, 0, block_size, block_size)
-            self.block4 = Rect(block_size * 4, 0, block_size, block_size)
+            self.block1 = Rect(0, 0, block_size, block_size)   # left, top, width, height
+            self.block2 = Rect(block_size, 0, block_size, block_size)
+            self.block3 = Rect(block_size * 2, 0, block_size, block_size)
+            self.block4 = Rect(block_size * 3, 0, block_size, block_size)
         elif draw == 2:
             self.type = "square"
-            self.block1 = Rect(block_size, 0, block_size, block_size)
-            self.block2 = Rect(block_size * 2, 0, block_size, block_size)
-            self.block3 = Rect(block_size, block_size, block_size, block_size)
-            self.block4 = Rect(block_size * 2, block_size, block_size, block_size)
+            self.block1 = Rect(0, 0, block_size, block_size)
+            self.block2 = Rect(block_size, 0, block_size, block_size)
+            self.block3 = Rect(0, block_size, block_size, block_size)
+            self.block4 = Rect(block_size, block_size, block_size, block_size)
 
         self.shape.append(self.block1)
         self.shape.append(self.block2)
