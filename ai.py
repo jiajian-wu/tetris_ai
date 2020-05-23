@@ -1,10 +1,10 @@
 import pygame
 import random
-from math import pi
-
-# Initialize the game engine
+from shape import Shape
 from pygame.rect import Rect
-
+import math
+import copy
+# Initialize the game engine
 pygame.init()
 
 # Define the colors we will use in RGB format
@@ -17,7 +17,7 @@ ORANGE = (255, 165, 0)
 
 # Set the height and width of the screen
 block_size = 30
-row, col = 25, 9
+row, col = 25, 10
 color = BLUE
 size = [block_size * col, block_size * row]
 screen = pygame.display.set_mode(size)
@@ -77,20 +77,20 @@ class Block_List:
 
         self.build_pos_matrix()
 
-        # print to test
-        for item in self.block_list:
-            print(item[0], end=" ")
-        self.print_pos_matrix()
-
-        apex_list = []  # position i stores the row number of the highest block at column i.
-        for j in range(col):
-            try:
-                idx = [self.pos_matrix[i][j] for i in range(len(self.pos_matrix))].index(1)
-                apex_list.append(idx)
-            except ValueError:
-                apex_list.append(row)
-        print("the list contains the apexes: ")
-        print(apex_list)
+        # # print to test
+        # for item in self.block_list:
+        #     print(item[0], end=" ")
+        # self.print_pos_matrix()
+        #
+        # apex_list = []  # position i stores the row number of the highest block at column i.
+        # for j in range(col):
+        #     try:
+        #         idx = [self.pos_matrix[i][j] for i in range(len(self.pos_matrix))].index(1)
+        #         apex_list.append(idx)
+        #     except ValueError:
+        #         apex_list.append(row)
+        # print("the list contains the apexes: ")
+        # print(apex_list)
 
     def build_pos_matrix(self):
         for pos in self.block_dict:
@@ -104,54 +104,111 @@ class Block_List:
 
 
 class Block(Rect):
-    def __init__(self):
+
+    def __init__(self, matrix):
         self.shape = []     # list to hold blocks which makes up the shape
         self.type = ""
+        self.state = None
         self.color = random.choice([BLUE, GREEN, RED, ORANGE])
         self.curr_steps = 0
-        self.right_steps = random.randint(0, col - 4)
-        draw = random.randint(1, 2)     # draw a shape
+        self.right_steps = None
+        draw = random.randint(1, 2)     # generate a shape
         if draw == 1:
             self.type = "I"
-            self.state = 1
-            self.block1 = Rect(0, 0, block_size, block_size)   # left, top, width, height
-            self.block2 = Rect(block_size, 0, block_size, block_size)
-            self.block3 = Rect(block_size * 2, 0, block_size, block_size)
-            self.block4 = Rect(block_size * 3, 0, block_size, block_size)
+            # score() --> decides 1.state with best score 2.steps needed to the right
+            self.score(matrix)
+            if self.state == 0:
+                self.block1 = Rect(0, 0, block_size, block_size)   # left, top, width, height
+                self.block2 = Rect(block_size, 0, block_size, block_size)
+                self.block3 = Rect(block_size * 2, 0, block_size, block_size)
+                self.block4 = Rect(block_size * 3, 0, block_size, block_size)
 
+            elif self.state == 1:
+                self.block1 = Rect(0, 0, block_size, block_size)  # left, top, width, height
+                self.block2 = Rect(0, block_size, block_size, block_size)
+                self.block3 = Rect(0, block_size * 2, block_size, block_size)
+                self.block4 = Rect(0, block_size * 3, block_size, block_size)
 
         elif draw == 2:
             self.type = "square"
-            self.block1 = Rect(0, 0, block_size, block_size)
-            self.block2 = Rect(block_size, 0, block_size, block_size)
-            self.block3 = Rect(0, block_size, block_size, block_size)
-            self.block4 = Rect(block_size, block_size, block_size, block_size)
+            # score() --> decides 1.state with best score 2.steps needed to the right
+            self.score(matrix)
+            if self.state == 0:
+                self.block1 = Rect(0, 0, block_size, block_size)
+                self.block2 = Rect(block_size, 0, block_size, block_size)
+                self.block3 = Rect(0, block_size, block_size, block_size)
+                self.block4 = Rect(block_size, block_size, block_size, block_size)
 
         self.shape.append(self.block1)
         self.shape.append(self.block2)
         self.shape.append(self.block3)
         self.shape.append(self.block4)
 
-    # def score_move(self, matrix):  # matrix: pos_matrix in Block class
-    #     matrix_copy = matrix    # a copy of the matrix
-    #
-    #     apex_list = []  # position i stores the row number of the highest block at column i.
-    #     for j in range(col):
-    #         try:
-    #             idx = [matrix[i][j] for i in range(len(matrix))].index(1)
-    #             apex_list.append(idx)
-    #         except ValueError:
-    #             apex_list.append(row)
-    #
-    #     # only dealing with "I" shape for now (!!!extend to general case later!!!)
-    #     if self.type == "I":
-    #         for i in range(col - 3):
-    #             for j in range(i, i+4):
-    #
-    #         move_distance = 0
-    #
-    # def score(self):
-    #     return random.randint(1,10)
+    def score(self, matrix):  # matrix: pos_matrix in Block class
+        # # simple test (random "state" and "right step")
+        # if self.type == "I":
+        #     self.state = random.randint(0, 1)
+        #     self.right_steps = random.randint(0, 5)
+        # elif self.type == "square":
+        #     self.state = 0
+        #     self.right_steps = random.randint(0, 5)
+        # # end simple test
+
+        matrix_copy = copy.deepcopy(matrix)
+
+        apex_list = []  # position i stores the row number of the highest block at column i.
+        for j in range(col):
+            try:
+                idx = [matrix[i][j] for i in range(len(matrix))].index(1)
+                apex_list.append(idx)
+            except ValueError:
+                apex_list.append(row)
+
+        # for each type, evaluate all possible positions of each rotation.
+        # The number of moves are (rotations * right).
+
+        # first position stores max_score, second position stores state,
+        # third position stores # of right steps to take
+        optimal_move = [None]*3
+        max_score = -1
+        shape_variants = Shape(self.type)
+        print("Type is ", self.type)
+        for state in range(len(shape_variants.all_combos)):
+            print("State is ", state)
+            rightmost = shape_variants.rightmost[state]
+            for step_number in range(0, col - rightmost):   # steps to move right
+                min_distance = math.inf
+                for coord in shape_variants.pos[state]:
+                    # find the minimum distance to move
+                    # row number: coord[0], col number: coord[1]+step_number
+                    distance = apex_list[coord[1]+step_number] - coord[0]
+                    if distance < min_distance:
+                        min_distance = distance
+
+                # move them
+                for coord in shape_variants.pos[state]:
+                    matrix_copy[coord[0] + min_distance - 1][coord[1] + step_number] = 1
+
+                score = self.score_matrix(matrix_copy)
+
+                print("\nMatrix after one possible movement is: ")
+                for r in matrix_copy:
+                    print(r)
+                print("\n")
+
+                matrix_copy = copy.deepcopy(matrix)
+
+                if score > max_score:
+                    max_score = score
+                    optimal_move[0] = max_score
+                    optimal_move[1] = state
+                    optimal_move[2] = step_number
+
+        self.state = optimal_move[1]
+        self.right_steps = optimal_move[2]
+
+    def score_matrix(self, matrix):
+        return random.randint(1, 10)
 
         # elif draw == 3:
         #     self.type = "T"
@@ -162,7 +219,7 @@ class Block(Rect):
         #     self.block4 = Rect(block_size * 2, 0, block_size, block_size)
 
     def move_down(self):
-        # move right to desirable position
+        # move right to desirable position calculated by score function
         if self.curr_steps < self.right_steps:
             for item in self.shape:
                 item.move_ip(block_size, 0)
@@ -249,11 +306,12 @@ done = False
 clock = pygame.time.Clock()
 
 block_list = Block_List()
-curr_block = Block()
+curr_block = Block(block_list.pos_matrix)
+
 
 while not done:
 
-    clock.tick(10)
+    clock.tick(15)
 
     for event in pygame.event.get():  # User did something
         if event.type == pygame.QUIT:  # If user clicked close
@@ -267,7 +325,7 @@ while not done:
     if curr_block.get_bottom() >= block_size * row or curr_block.collide_down(block_list.block_dict):
         block_list.append(curr_block, curr_block.color)  # add to sitting blocks then create a new block
         block_list.clear_row()
-        curr_block = Block()
+        curr_block = Block(block_list.pos_matrix)
 
     curr_block.draw(screen)  # draw the falling block
 
