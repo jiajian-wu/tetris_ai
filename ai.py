@@ -112,7 +112,7 @@ class Block(Rect):
         self.color = random.choice([BLUE, GREEN, RED, ORANGE])
         self.curr_steps = 0
         self.right_steps = None
-        draw = random.randint(1, 2)     # generate a shape
+        draw = random.randint(1, 4)     # generate a shape
         if draw == 1:
             self.type = "I"
             # score() --> decides 1.state with best score 2.steps needed to the right
@@ -138,6 +138,49 @@ class Block(Rect):
                 self.block2 = Rect(block_size, 0, block_size, block_size)
                 self.block3 = Rect(0, block_size, block_size, block_size)
                 self.block4 = Rect(block_size, block_size, block_size, block_size)
+
+        elif draw == 3:
+            self.type = "z"
+            # score() --> decides 1.state with best score 2.steps needed to the right
+            self.score(matrix)
+            if self.state == 0:
+                self.block1 = Rect(0, 0, block_size, block_size)  # left, top, width, height
+                self.block2 = Rect(block_size, 0, block_size, block_size)
+                self.block3 = Rect(block_size, block_size, block_size, block_size)
+                self.block4 = Rect(block_size * 2, block_size, block_size, block_size)
+
+            elif self.state == 1:
+                self.block1 = Rect(block_size, 0, block_size, block_size)  # left, top, width, height
+                self.block2 = Rect(0, block_size, block_size, block_size)
+                self.block3 = Rect(block_size, block_size, block_size, block_size)
+                self.block4 = Rect(0, block_size * 2, block_size, block_size)
+
+        elif draw == 4:
+            self.type = "T"
+            self.score(matrix)
+            if self.state == 0:
+                self.block1 = Rect(0, 0, block_size, block_size)  # left, top, width, height
+                self.block2 = Rect(block_size, 0, block_size, block_size)
+                self.block3 = Rect(block_size * 2, 0, block_size, block_size)
+                self.block4 = Rect(block_size, block_size, block_size, block_size)
+
+            elif self.state == 1:
+                self.block1 = Rect(0, 0, block_size, block_size)  # left, top, width, height
+                self.block2 = Rect(0, block_size, block_size, block_size)
+                self.block3 = Rect(block_size, block_size, block_size, block_size)
+                self.block4 = Rect(0, block_size * 2, block_size, block_size)
+
+            elif self.state == 2:
+                self.block1 = Rect(block_size, 0, block_size, block_size)  # left, top, width, height
+                self.block2 = Rect(0, block_size, block_size, block_size)
+                self.block3 = Rect(block_size, block_size, block_size, block_size)
+                self.block4 = Rect(block_size * 2, block_size, block_size, block_size)
+
+            elif self.state == 3:
+                self.block1 = Rect(block_size, 0, block_size, block_size)  # left, top, width, height
+                self.block2 = Rect(0, block_size, block_size, block_size)
+                self.block3 = Rect(block_size, block_size, block_size, block_size)
+                self.block4 = Rect(block_size, block_size * 2, block_size, block_size)
 
         self.shape.append(self.block1)
         self.shape.append(self.block2)
@@ -199,11 +242,12 @@ class Block(Rect):
         self.state = optimal_move[1]
         self.right_steps = optimal_move[2]
 
+
     def score_matrix(self, matrix):
         score = 0
         for r in matrix:
             if set(r) == {1}:
-                score += 10
+                score += 1000
 
         # score on occupancy of each row - more zero, less score
         for r in matrix:
@@ -214,13 +258,6 @@ class Block(Rect):
 
         return score
 
-        # elif draw == 3:
-        #     self.type = "T"
-        #     self.state = 1
-        #     self.block1 = Rect(block_size, block_size, block_size, block_size)
-        #     self.block2 = Rect(block_size * 2, block_size, block_size, block_size)
-        #     self.block3 = Rect(block_size * 3, block_size, block_size, block_size)
-        #     self.block4 = Rect(block_size * 2, 0, block_size, block_size)
 
     def move_down(self):
         # move right to desirable position calculated by score function
@@ -315,7 +352,7 @@ curr_block = Block(block_list.pos_matrix)
 
 while not done:
 
-    clock.tick(10)
+    clock.tick(15)
 
     for event in pygame.event.get():  # User did something
         if event.type == pygame.QUIT:  # If user clicked close
