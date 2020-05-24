@@ -145,14 +145,6 @@ class Block(Rect):
         self.shape.append(self.block4)
 
     def score(self, matrix):  # matrix: pos_matrix in Block class
-        # # simple test (random "state" and "right step")
-        # if self.type == "I":
-        #     self.state = random.randint(0, 1)
-        #     self.right_steps = random.randint(0, 5)
-        # elif self.type == "square":
-        #     self.state = 0
-        #     self.right_steps = random.randint(0, 5)
-        # # end simple test
 
         matrix_copy = copy.deepcopy(matrix)
 
@@ -170,7 +162,7 @@ class Block(Rect):
         # first position stores max_score, second position stores state,
         # third position stores # of right steps to take
         optimal_move = [None]*3
-        max_score = -1
+        max_score = float("-inf")
         shape_variants = Shape(self.type)
         print("Type is ", self.type)
         for state in range(len(shape_variants.all_combos)):
@@ -208,7 +200,19 @@ class Block(Rect):
         self.right_steps = optimal_move[2]
 
     def score_matrix(self, matrix):
-        return random.randint(1, 10)
+        score = 0
+        for r in matrix:
+            if set(r) == {1}:
+                score += 10
+
+        # score on occupancy of each row - more zero, less score
+        for r in matrix:
+            count_one = r.count(1)
+            if count_one != 0:
+                count_zero = col - count_one
+                score -= count_zero
+
+        return score
 
         # elif draw == 3:
         #     self.type = "T"
@@ -311,7 +315,7 @@ curr_block = Block(block_list.pos_matrix)
 
 while not done:
 
-    clock.tick(15)
+    clock.tick(10)
 
     for event in pygame.event.get():  # User did something
         if event.type == pygame.QUIT:  # If user clicked close
