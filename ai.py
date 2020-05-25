@@ -112,7 +112,7 @@ class Block(Rect):
         self.color = random.choice([BLUE, GREEN, RED, ORANGE])
         self.curr_steps = 0
         self.right_steps = None
-        draw = random.randint(1, 5)     # generate a shape
+        draw = random.randint(1, 7)     # generate a shape
         if draw == 1:
             self.type = "I"
             # score() --> decides 1.state with best score 2.steps needed to the right
@@ -156,6 +156,22 @@ class Block(Rect):
                 self.block4 = Rect(0, block_size * 2, block_size, block_size)
 
         elif draw == 4:
+            self.type = "z_2"
+            # score() --> decides 1.state with best score 2.steps needed to the right
+            self.score(matrix)
+            if self.state == 0:
+                self.block1 = Rect(block_size, 0, block_size, block_size)  # left, top, width, height
+                self.block2 = Rect(block_size*2, 0, block_size, block_size)
+                self.block3 = Rect(0, block_size, block_size, block_size)
+                self.block4 = Rect(block_size, block_size, block_size, block_size)
+
+            elif self.state == 1:
+                self.block1 = Rect(0, 0, block_size, block_size)  # left, top, width, height
+                self.block2 = Rect(0, block_size, block_size, block_size)
+                self.block3 = Rect(block_size, block_size, block_size, block_size)
+                self.block4 = Rect(block_size, block_size * 2, block_size, block_size)
+
+        elif draw == 5:
             self.type = "T"
             self.score(matrix)
             if self.state == 0:
@@ -182,7 +198,7 @@ class Block(Rect):
                 self.block3 = Rect(block_size, block_size, block_size, block_size)
                 self.block4 = Rect(block_size, block_size * 2, block_size, block_size)
 
-        elif draw == 5:
+        elif draw == 6:
             self.type = "L"
             self.score(matrix)
             if self.state == 0:
@@ -207,6 +223,33 @@ class Block(Rect):
                 self.block1 = Rect(block_size * 2, 0, block_size, block_size)  # left, top, width, height
                 self.block2 = Rect(0, block_size, block_size, block_size)
                 self.block3 = Rect(block_size, block_size, block_size, block_size)
+                self.block4 = Rect(block_size * 2, block_size, block_size, block_size)
+
+        elif draw == 7:
+            self.type = "L_2"
+            self.score(matrix)
+            if self.state == 0:
+                self.block1 = Rect(0, 0, block_size, block_size)  # left, top, width, height
+                self.block2 = Rect(block_size, 0, block_size, block_size)
+                self.block3 = Rect(0, block_size, block_size, block_size)
+                self.block4 = Rect(0, block_size * 2, block_size, block_size)
+
+            elif self.state == 1:
+                self.block1 = Rect(0, 0, block_size, block_size)  # left, top, width, height
+                self.block2 = Rect(0, block_size, block_size, block_size)
+                self.block3 = Rect(block_size, block_size, block_size, block_size)
+                self.block4 = Rect(block_size * 2, block_size, block_size, block_size)
+
+            elif self.state == 2:
+                self.block1 = Rect(block_size, 0, block_size, block_size)  # left, top, width, height
+                self.block2 = Rect(block_size, block_size, block_size, block_size)
+                self.block3 = Rect(0, block_size * 2, block_size, block_size)
+                self.block4 = Rect(block_size, block_size * 2, block_size, block_size)
+
+            elif self.state == 3:
+                self.block1 = Rect(0, 0, block_size, block_size)  # left, top, width, height
+                self.block2 = Rect(block_size, 0, block_size, block_size)
+                self.block3 = Rect(block_size * 2, 0, block_size, block_size)
                 self.block4 = Rect(block_size * 2, block_size, block_size, block_size)
 
         self.shape.append(self.block1)
@@ -281,7 +324,7 @@ class Block(Rect):
         for i in range(row - 1):
             for j in range(col):
                 if matrix[i][j] == 1 and matrix[i+1][j] == 0:
-                    score_off += 1
+                    score_off += 2
                     try:
                         for k in range(i+2, row-1):
                             if matrix[k][j] == 0:
@@ -291,33 +334,7 @@ class Block(Rect):
         print("score off: ", score_off)
         score -= score_off
 
-
-
-        # score -= max(apex_list)
-        # score on occupancy of each row - more zero, less score
-        # for r in matrix:
-        #     count_one = r.count(1)
-        #     if count_one > 0:
-        #         count_zero = col - count_one
-        #         score -= count_zero
-
-        # # count consecutive 1s in each row
-        # total_consecutive_one = 0
-        # for i in range(row):
-        #     curr_consecutive_one = 0
-        #     row_consecutive_one = 0
-        #     for j in range(col):
-        #         if matrix[i][j] != 1 or j == col - 1:
-        #             if curr_consecutive_one > row_consecutive_one:
-        #                 row_consecutive_one = curr_consecutive_one
-        #                 curr_consecutive_one = 0
-        #         else:
-        #             curr_consecutive_one += 1
-        #     total_consecutive_one += row_consecutive_one
-        #
-        # score += total_consecutive_one
         return score
-
 
     def move_down(self):
         # move right to desirable position calculated by score function
@@ -412,7 +429,7 @@ curr_block = Block(block_list.pos_matrix)
 
 while not done:
 
-    clock.tick(50)
+    clock.tick(20)
 
     for event in pygame.event.get():  # User did something
         if event.type == pygame.QUIT:  # If user clicked close
