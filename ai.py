@@ -4,6 +4,7 @@ from shape import Shape
 from pygame.rect import Rect
 import math
 import copy
+import statistics
 # Initialize the game engine
 pygame.init()
 
@@ -16,11 +17,15 @@ RED = (255, 0, 0)
 ORANGE = (255, 165, 0)
 
 # Set the height and width of the screen
-block_size = 25
-row, col = 30, 10
+block_size = 20
+row, col = 20, 10
 color = BLUE
-size = [block_size * col, block_size * row]
+size = [block_size * (col + 6), block_size * row]
 screen = pygame.display.set_mode(size)
+
+
+def draw_separate_line(s):   # left, top, width, height
+    pygame.draw.rect(s, BLACK, Rect(block_size * col, 0, block_size/5, block_size * row))
 
 ############################################
 
@@ -33,6 +38,7 @@ class Block_List:
     block_dict = {}
     block_list = []
     pos_matrix = [[0] * col for i in range(row)]
+    total_row_cleared = 0
     # def find_curr_top(self):    # find top position
 
     def draw_all(self, surface):
@@ -57,6 +63,7 @@ class Block_List:
                 for c in range(col):
                     del self.block_dict[(c * block_size, i * block_size)]
                 row_cleared += 1
+                self.total_row_cleared += 1
                 if i < top_cleared_row:
                     top_cleared_row = i
             count = 0
@@ -277,9 +284,9 @@ class Block(Rect):
         optimal_move = [None]*3
         max_score = float("-inf")
         shape_variants = Shape(self.type)
-        print("Type is ", self.type)
+        # print("Type is ", self.type)
         for state in range(len(shape_variants.all_combos)):
-            print("State is ", state)
+            # print("State is ", state)
             rightmost = shape_variants.rightmost[state]
             for step_number in range(0, col - rightmost):   # steps to move right
                 min_distance = math.inf
@@ -296,10 +303,10 @@ class Block(Rect):
 
                 score = self.score_matrix(matrix_copy, min_distance)
 
-                print("\nMatrix after one possible movement is: ")
-                for r in matrix_copy:
-                    print(r)
-                print("\n")
+                # print("\nMatrix after one possible movement is: ")
+                # for r in matrix_copy:
+                #     print(r)
+                # print("\n")
 
                 matrix_copy = copy.deepcopy(matrix)
 
@@ -314,25 +321,38 @@ class Block(Rect):
 
     def score_matrix(self, matrix, move_distance):
         score = 0
+        row_cleared = 0
         for r in matrix:
             if set(r) == {1}:
-                score += 10
-
-        score += move_distance
+                row_cleared += 1
+        score += row_cleared * row_cleared
 
         score_off = 0
         for i in range(row - 1):
             for j in range(col):
-                if matrix[i][j] == 1 and matrix[i+1][j] == 0:
-                    score_off += 2
+                if matrix[i][j] == 1:
                     try:
-                        for k in range(i+2, row-1):
+                        for k in range(i+1, row):
+                            if matrix[k][j] == 1:
+                                break
                             if matrix[k][j] == 0:
-                                score_off += 2
+                                score_off += 1
                     except:
                         pass
         print("score off: ", score_off)
         score -= score_off
+
+        apex_list = []  # position i stores the row number of the highest block at column i.
+        for j in range(col):
+            try:
+                idx = [matrix[i][j] for i in range(len(matrix))].index(1)
+                apex_list.append(idx)
+            except ValueError:
+                apex_list.append(row)
+        apex_list = [row - i for i in apex_list]
+        std = statistics.stdev(apex_list)
+        print("std is ", std)
+        score -= std
 
         return score
 
@@ -426,6 +446,8 @@ clock = pygame.time.Clock()
 block_list = Block_List()
 curr_block = Block(block_list.pos_matrix)
 
+cleared_rows = pygame.font.SysFont('Arial', 30)
+
 
 while not done:
 
@@ -446,9 +468,12 @@ while not done:
         curr_block = Block(block_list.pos_matrix)
 
     curr_block.draw(screen)  # draw the falling block
+    block_list.draw_all(screen)     # draw the sitting blocks
+    draw_separate_line(screen)
 
-    block_list.draw_all(screen)
+    text_surface = cleared_rows.render(str(block_list.total_row_cleared), False, (0, 0, 0))
+    screen.blit(text_surface, ((col+1) * block_size, block_size))
 
-    pygame.display.update()
+    pygame.display.flip()
 
 pygame.quit()
