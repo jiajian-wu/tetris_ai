@@ -5,6 +5,7 @@ from pygame.rect import Rect
 import math
 import copy
 import statistics
+
 # Initialize the game engine
 pygame.init()
 
@@ -24,8 +25,9 @@ size = [block_size * (col + 6), block_size * row]
 screen = pygame.display.set_mode(size)
 
 
-def draw_separate_line(s):   # left, top, width, height
-    pygame.draw.rect(s, BLACK, Rect(block_size * col, 0, block_size/5, block_size * row))
+def draw_separate_line(s):  # left, top, width, height
+    pygame.draw.rect(s, BLACK, Rect(block_size * col, 0, block_size / 5, block_size * row))
+
 
 ############################################
 
@@ -39,6 +41,7 @@ class Block_List:
     block_list = []
     pos_matrix = [[0] * col for i in range(row)]
     total_row_cleared = 0
+
     # def find_curr_top(self):    # find top position
 
     def draw_all(self, surface):
@@ -51,9 +54,10 @@ class Block_List:
 
     def clear_row(self):
         count = 0
-        row_cleared = 0
-        top_cleared_row = 10000
+        numbers_row_cleared = 0
+        top_cleared_row = None
         self.pos_matrix = [[0] * col for i in range(row)]
+        rows_cleared = []
 
         for i in range(row):
             for j in range(col):
@@ -62,46 +66,70 @@ class Block_List:
             if count == col:
                 for c in range(col):
                     del self.block_dict[(c * block_size, i * block_size)]
-                row_cleared += 1
+                numbers_row_cleared += 1
                 self.total_row_cleared += 1
-                if i < top_cleared_row:
-                    top_cleared_row = i
+                rows_cleared.append(i)  # record number of the row to be cleared
             count = 0
+        rows_cleared = sorted(rows_cleared, reverse=True)
 
-        # move the blocks down after row-clearing
-        # create a list from dict since dict can't keep track of order of positions.
+        # To move the rows, if any, between cleared rows
+        count = 1
+        for idx in range(len(rows_cleared) - 1):
+            if rows_cleared[idx] - 1 == rows_cleared[idx + 1]:
+                count += 1
+            else:
+                for mid_row in range(rows_cleared[idx] - 1, rows_cleared[idx + 1], -1):
+                    try:
+                        self.move(mid_row, count)
+                    except:
+                        pass
+
+        if numbers_row_cleared != 0:
+            top_cleared_row = rows_cleared[-1]
         self.block_list = self.block_dict.items()
         self.block_list = sorted(self.block_list, key=lambda x: x[0][1], reverse=True)
-        if row_cleared != 0:
+        if numbers_row_cleared != 0:
             for item in self.block_list:
                 if item[0][1] < block_size * top_cleared_row:
-                    self.block_dict[item[0]][0].move_ip(0, block_size * row_cleared)    # move the rectangle
-                    self.block_dict[item[1][0].topleft] = (item[1][0], item[1][1])  # reassign new positions
-                    del self.block_dict[item[0]]    # delete old one
+                    self.block_dict[item[0]][0].move_ip(0, block_size * numbers_row_cleared)  # move the rectangle
+                    self.block_dict[item[1][0].topleft] = self.block_dict[item[0]]  # reassign new positions
+                    del self.block_dict[item[0]]  # delete old one
 
         self.block_list = self.block_dict.items()
         self.block_list = sorted(self.block_list, key=lambda x: x[0][1], reverse=True)
 
         self.build_pos_matrix()
 
-        # # print to test
-        # for item in self.block_list:
-        #     print(item[0], end=" ")
-        # self.print_pos_matrix()
+    def move(self, mid_row, steps_to_move):
+        # block_dict -> (left,top):(block, color)
+        # item -> (left, top)
+        for coord in self.block_dict:
+            if coord[1] == mid_row * block_size:
+                self.block_dict[coord][0].move_ip(0, block_size * steps_to_move)  # move the rectangle
+                new_coord = self.block_dict[coord][0].topleft
+                self.block_dict[new_coord] = (
+                self.block_dict[coord][0], self.block_dict[coord][1])  # reassign new positions
+                del self.block_dict[coord]  # delete old one
+
+        # # move the blocks down after row-clearing
+        # # create a list from dict since dict can't keep track of order of positions.
+        # self.block_list = self.block_dict.items()
+        # self.block_list = sorted(self.block_list, key=lambda x: x[0][1], reverse=True)
+        # if numbers_row_cleared != 0:
+        #     for item in self.block_list:
+        #         if item[0][1] < block_size * top_cleared_row:
+        #             self.block_dict[item[0]][0].move_ip(0, block_size * numbers_row_cleared)    # move the rectangle
+        #             self.block_dict[item[1][0].topleft] = (item[1][0], item[1][1])  # reassign new positions
+        #             del self.block_dict[item[0]]    # delete old one
         #
-        # apex_list = []  # position i stores the row number of the highest block at column i.
-        # for j in range(col):
-        #     try:
-        #         idx = [self.pos_matrix[i][j] for i in range(len(self.pos_matrix))].index(1)
-        #         apex_list.append(idx)
-        #     except ValueError:
-        #         apex_list.append(row)
-        # print("the list contains the apexes: ")
-        # print(apex_list)
+        # self.block_list = self.block_dict.items()
+        # self.block_list = sorted(self.block_list, key=lambda x: x[0][1], reverse=True)
+        #
+        # self.build_pos_matrix()
 
     def build_pos_matrix(self):
         for pos in self.block_dict:
-            self.pos_matrix[int(pos[1]/block_size)][int(pos[0]/block_size)] = 1
+            self.pos_matrix[int(pos[1] / block_size)][int(pos[0] / block_size)] = 1
 
     def print_pos_matrix(self):
         print("\nThe position matrix is:")
@@ -113,7 +141,7 @@ class Block_List:
 class Block(Rect):
 
     def __init__(self, matrix):
-        self.shape = []     # list to hold blocks which makes up the shape
+        self.shape = []  # list to hold blocks which makes up the shape
         self.type = ""
         self.state = None
         self.color = random.choice([BLUE, GREEN, RED, ORANGE])
@@ -121,17 +149,16 @@ class Block(Rect):
         self.steps = None
         self.starting_column = 4
         starting_left_pos = 4 * block_size
-        draw = random.randint(1, 7)     # generate a shape
+        draw = random.randint(1, 7)  # generate a shape
         if draw == 1:
             self.type = "I"
             # score() --> decides 1.state with best score 2.steps needed to the right
             self.score(matrix)
             if self.state == 0:
-                self.block1 = Rect(starting_left_pos, 0, block_size, block_size)   # left, top, width, height
+                self.block1 = Rect(starting_left_pos, 0, block_size, block_size)  # left, top, width, height
                 self.block2 = Rect(starting_left_pos + block_size, 0, block_size, block_size)
                 self.block3 = Rect(starting_left_pos + block_size * 2, 0, block_size, block_size)
                 self.block4 = Rect(starting_left_pos + block_size * 3, 0, block_size, block_size)
-
 
             elif self.state == 1:
                 self.block1 = Rect(starting_left_pos, 0, block_size, block_size)  # left, top, width, height
@@ -154,113 +181,119 @@ class Block(Rect):
             # score() --> decides 1.state with best score 2.steps needed to the right
             self.score(matrix)
             if self.state == 0:
-                self.block1 = Rect(starting_left_pos+0, 0, block_size, block_size)  # left, top, width, height
-                self.block2 = Rect(starting_left_pos+block_size, 0, block_size, block_size)
-                self.block3 = Rect(starting_left_pos+block_size, block_size, block_size, block_size)
-                self.block4 = Rect(starting_left_pos+block_size * 2, block_size, block_size, block_size)
+                self.block1 = Rect(starting_left_pos + 0, 0, block_size, block_size)  # left, top, width, height
+                self.block2 = Rect(starting_left_pos + block_size, 0, block_size, block_size)
+                self.block3 = Rect(starting_left_pos + block_size, block_size, block_size, block_size)
+                self.block4 = Rect(starting_left_pos + block_size * 2, block_size, block_size, block_size)
 
             elif self.state == 1:
-                self.block1 = Rect(starting_left_pos+block_size, 0, block_size, block_size)  # left, top, width, height
-                self.block2 = Rect(starting_left_pos+0, block_size, block_size, block_size)
-                self.block3 = Rect(starting_left_pos+block_size, block_size, block_size, block_size)
-                self.block4 = Rect(starting_left_pos+0, block_size * 2, block_size, block_size)
+                self.block1 = Rect(starting_left_pos + block_size, 0, block_size,
+                                   block_size)  # left, top, width, height
+                self.block2 = Rect(starting_left_pos + 0, block_size, block_size, block_size)
+                self.block3 = Rect(starting_left_pos + block_size, block_size, block_size, block_size)
+                self.block4 = Rect(starting_left_pos + 0, block_size * 2, block_size, block_size)
 
         elif draw == 4:
             self.type = "z_2"
             # score() --> decides 1.state with best score 2.steps needed to the right
             self.score(matrix)
             if self.state == 0:
-                self.block1 = Rect(starting_left_pos+block_size, 0, block_size, block_size)  # left, top, width, height
-                self.block2 = Rect(starting_left_pos+block_size*2, 0, block_size, block_size)
-                self.block3 = Rect(starting_left_pos+0, block_size, block_size, block_size)
-                self.block4 = Rect(starting_left_pos+block_size, block_size, block_size, block_size)
+                self.block1 = Rect(starting_left_pos + block_size, 0, block_size,
+                                   block_size)  # left, top, width, height
+                self.block2 = Rect(starting_left_pos + block_size * 2, 0, block_size, block_size)
+                self.block3 = Rect(starting_left_pos + 0, block_size, block_size, block_size)
+                self.block4 = Rect(starting_left_pos + block_size, block_size, block_size, block_size)
 
             elif self.state == 1:
-                self.block1 = Rect(starting_left_pos+0, 0, block_size, block_size)  # left, top, width, height
-                self.block2 = Rect(starting_left_pos+0, block_size, block_size, block_size)
-                self.block3 = Rect(starting_left_pos+block_size, block_size, block_size, block_size)
-                self.block4 = Rect(starting_left_pos+block_size, block_size * 2, block_size, block_size)
+                self.block1 = Rect(starting_left_pos + 0, 0, block_size, block_size)  # left, top, width, height
+                self.block2 = Rect(starting_left_pos + 0, block_size, block_size, block_size)
+                self.block3 = Rect(starting_left_pos + block_size, block_size, block_size, block_size)
+                self.block4 = Rect(starting_left_pos + block_size, block_size * 2, block_size, block_size)
 
         elif draw == 5:
             self.type = "T"
             self.score(matrix)
             if self.state == 0:
-                self.block1 = Rect(starting_left_pos+0, 0, block_size, block_size)  # left, top, width, height
-                self.block2 = Rect(starting_left_pos+block_size, 0, block_size, block_size)
-                self.block3 = Rect(starting_left_pos+block_size * 2, 0, block_size, block_size)
-                self.block4 = Rect(starting_left_pos+block_size, block_size, block_size, block_size)
+                self.block1 = Rect(starting_left_pos + 0, 0, block_size, block_size)  # left, top, width, height
+                self.block2 = Rect(starting_left_pos + block_size, 0, block_size, block_size)
+                self.block3 = Rect(starting_left_pos + block_size * 2, 0, block_size, block_size)
+                self.block4 = Rect(starting_left_pos + block_size, block_size, block_size, block_size)
 
             elif self.state == 1:
-                self.block1 = Rect(starting_left_pos+0, 0, block_size, block_size)  # left, top, width, height
-                self.block2 = Rect(starting_left_pos+0, block_size, block_size, block_size)
-                self.block3 = Rect(starting_left_pos+block_size, block_size, block_size, block_size)
-                self.block4 = Rect(starting_left_pos+0, block_size * 2, block_size, block_size)
+                self.block1 = Rect(starting_left_pos + 0, 0, block_size, block_size)  # left, top, width, height
+                self.block2 = Rect(starting_left_pos + 0, block_size, block_size, block_size)
+                self.block3 = Rect(starting_left_pos + block_size, block_size, block_size, block_size)
+                self.block4 = Rect(starting_left_pos + 0, block_size * 2, block_size, block_size)
 
             elif self.state == 2:
-                self.block1 = Rect(starting_left_pos+block_size, 0, block_size, block_size)  # left, top, width, height
-                self.block2 = Rect(starting_left_pos+0, block_size, block_size, block_size)
-                self.block3 = Rect(starting_left_pos+block_size, block_size, block_size, block_size)
-                self.block4 = Rect(starting_left_pos+block_size * 2, block_size, block_size, block_size)
+                self.block1 = Rect(starting_left_pos + block_size, 0, block_size,
+                                   block_size)  # left, top, width, height
+                self.block2 = Rect(starting_left_pos + 0, block_size, block_size, block_size)
+                self.block3 = Rect(starting_left_pos + block_size, block_size, block_size, block_size)
+                self.block4 = Rect(starting_left_pos + block_size * 2, block_size, block_size, block_size)
 
             elif self.state == 3:
-                self.block1 = Rect(starting_left_pos+block_size, 0, block_size, block_size)  # left, top, width, height
-                self.block2 = Rect(starting_left_pos+0, block_size, block_size, block_size)
-                self.block3 = Rect(starting_left_pos+block_size, block_size, block_size, block_size)
-                self.block4 = Rect(starting_left_pos+block_size, block_size * 2, block_size, block_size)
+                self.block1 = Rect(starting_left_pos + block_size, 0, block_size,
+                                   block_size)  # left, top, width, height
+                self.block2 = Rect(starting_left_pos + 0, block_size, block_size, block_size)
+                self.block3 = Rect(starting_left_pos + block_size, block_size, block_size, block_size)
+                self.block4 = Rect(starting_left_pos + block_size, block_size * 2, block_size, block_size)
 
         elif draw == 6:
             self.type = "L"
             self.score(matrix)
             if self.state == 0:
-                self.block1 = Rect(starting_left_pos+0, 0, block_size, block_size)  # left, top, width, height
-                self.block2 = Rect(starting_left_pos+block_size, 0, block_size, block_size)
-                self.block3 = Rect(starting_left_pos+block_size, block_size, block_size, block_size)
-                self.block4 = Rect(starting_left_pos+block_size, block_size * 2, block_size, block_size)
+                self.block1 = Rect(starting_left_pos + 0, 0, block_size, block_size)  # left, top, width, height
+                self.block2 = Rect(starting_left_pos + block_size, 0, block_size, block_size)
+                self.block3 = Rect(starting_left_pos + block_size, block_size, block_size, block_size)
+                self.block4 = Rect(starting_left_pos + block_size, block_size * 2, block_size, block_size)
 
             elif self.state == 1:
-                self.block1 = Rect(starting_left_pos+0, 0, block_size, block_size)  # left, top, width, height
-                self.block2 = Rect(starting_left_pos+block_size, 0, block_size, block_size)
-                self.block3 = Rect(starting_left_pos+block_size * 2, 0, block_size, block_size)
-                self.block4 = Rect(starting_left_pos+0, block_size, block_size, block_size)
+                self.block1 = Rect(starting_left_pos + 0, 0, block_size, block_size)  # left, top, width, height
+                self.block2 = Rect(starting_left_pos + block_size, 0, block_size, block_size)
+                self.block3 = Rect(starting_left_pos + block_size * 2, 0, block_size, block_size)
+                self.block4 = Rect(starting_left_pos + 0, block_size, block_size, block_size)
 
             elif self.state == 2:
-                self.block1 = Rect(starting_left_pos+0, 0, block_size, block_size)  # left, top, width, height
-                self.block2 = Rect(starting_left_pos+0, block_size, block_size, block_size)
-                self.block3 = Rect(starting_left_pos+0, block_size * 2, block_size, block_size)
-                self.block4 = Rect(starting_left_pos+block_size, block_size * 2, block_size, block_size)
+                self.block1 = Rect(starting_left_pos + 0, 0, block_size, block_size)  # left, top, width, height
+                self.block2 = Rect(starting_left_pos + 0, block_size, block_size, block_size)
+                self.block3 = Rect(starting_left_pos + 0, block_size * 2, block_size, block_size)
+                self.block4 = Rect(starting_left_pos + block_size, block_size * 2, block_size, block_size)
 
             elif self.state == 3:
-                self.block1 = Rect(starting_left_pos+block_size * 2, 0, block_size, block_size)  # left, top, width, height
-                self.block2 = Rect(starting_left_pos+0, block_size, block_size, block_size)
-                self.block3 = Rect(starting_left_pos+block_size, block_size, block_size, block_size)
-                self.block4 = Rect(starting_left_pos+block_size * 2, block_size, block_size, block_size)
+                self.block1 = Rect(starting_left_pos + block_size * 2, 0, block_size,
+                                   block_size)  # left, top, width, height
+                self.block2 = Rect(starting_left_pos + 0, block_size, block_size, block_size)
+                self.block3 = Rect(starting_left_pos + block_size, block_size, block_size, block_size)
+                self.block4 = Rect(starting_left_pos + block_size * 2, block_size, block_size, block_size)
 
         elif draw == 7:
             self.type = "L_2"
             self.score(matrix)
             if self.state == 0:
-                self.block1 = Rect(starting_left_pos+0, 0, block_size, block_size)  # left, top, width, height
-                self.block2 = Rect(starting_left_pos+block_size, 0, block_size, block_size)
-                self.block3 = Rect(starting_left_pos+0, block_size, block_size, block_size)
-                self.block4 = Rect(starting_left_pos+0, block_size * 2, block_size, block_size)
+                self.block1 = Rect(starting_left_pos + 0, 0, block_size, block_size)  # left, top, width, height
+                self.block2 = Rect(starting_left_pos + block_size, 0, block_size, block_size)
+                self.block3 = Rect(starting_left_pos + 0, block_size, block_size, block_size)
+                self.block4 = Rect(starting_left_pos + 0, block_size * 2, block_size, block_size)
 
             elif self.state == 1:
-                self.block1 = Rect(starting_left_pos+0, 0, block_size, block_size)  # left, top, width, height
-                self.block2 = Rect(starting_left_pos+0, block_size, block_size, block_size)
-                self.block3 = Rect(starting_left_pos+block_size, block_size, block_size, block_size)
-                self.block4 = Rect(starting_left_pos+block_size * 2, block_size, block_size, block_size)
+                self.block1 = Rect(starting_left_pos + 0, 0, block_size, block_size)  # left, top, width, height
+                self.block2 = Rect(starting_left_pos + 0, block_size, block_size, block_size)
+                self.block3 = Rect(starting_left_pos + block_size, block_size, block_size, block_size)
+                self.block4 = Rect(starting_left_pos + block_size * 2, block_size, block_size, block_size)
 
             elif self.state == 2:
-                self.block1 = Rect(starting_left_pos+block_size, 0, block_size, block_size)  # left, top, width, height
-                self.block2 = Rect(starting_left_pos+block_size, block_size, block_size, block_size)
-                self.block3 = Rect(starting_left_pos+0, block_size * 2, block_size, block_size)
-                self.block4 = Rect(starting_left_pos+block_size, block_size * 2, block_size, block_size)
+                self.block1 = Rect(starting_left_pos + block_size, 0, block_size,
+                                   block_size)  # left, top, width, height
+                self.block2 = Rect(starting_left_pos + block_size, block_size, block_size, block_size)
+                self.block3 = Rect(starting_left_pos + 0, block_size * 2, block_size, block_size)
+                self.block4 = Rect(starting_left_pos + block_size, block_size * 2, block_size, block_size)
 
             elif self.state == 3:
-                self.block1 = Rect(starting_left_pos+0, 0, block_size, block_size)  # left, top, width, height
-                self.block2 = Rect(starting_left_pos+block_size, 0, block_size, block_size)
-                self.block3 = Rect(starting_left_pos+block_size * 2, 0, block_size, block_size)
-                self.block4 = Rect(starting_left_pos+block_size * 2, block_size, block_size, block_size)
+                self.block1 = Rect(starting_left_pos + 0, 0, block_size, block_size)  # left, top, width, height
+                self.block2 = Rect(starting_left_pos + block_size, 0, block_size, block_size)
+                self.block3 = Rect(starting_left_pos + block_size * 2, 0, block_size, block_size)
+                self.block4 = Rect(starting_left_pos + block_size * 2, block_size, block_size, block_size)
 
         self.shape.append(self.block1)
         self.shape.append(self.block2)
@@ -284,19 +317,19 @@ class Block(Rect):
 
         # first position stores max_score, second position stores state,
         # third position stores # of steps to take
-        optimal_move = [None]*3
+        optimal_move = [None] * 3
         max_score = float("-inf")
         shape_variants = Shape(self.type)
         # print("Type is ", self.type)
         for state in range(len(shape_variants.all_combos)):
             # print("State is ", state)
             rightmost = shape_variants.rightmost[state] + self.starting_column
-            for step_number in range(0, col - rightmost):   # steps to move RIGHT
+            for step_number in range(0, col - rightmost):  # steps to move RIGHT
                 min_distance = math.inf
                 for coord in shape_variants.pos[state]:
                     # find the minimum distance to move
                     # row number: coord[0], col number: coord[1]+step_number
-                    distance = apex_list[coord[1]+step_number+self.starting_column] - coord[0]
+                    distance = apex_list[coord[1] + step_number + self.starting_column] - coord[0]
                     if distance < min_distance:
                         min_distance = distance
 
@@ -306,10 +339,10 @@ class Block(Rect):
 
                 score = self.score_matrix(matrix_copy, min_distance)
 
-                print("\nMatrix after one possible movement is: ")
-                for r in matrix_copy:
-                    print(r)
-                print("\n")
+                # print("\nMatrix after one possible movement is: ")
+                # for r in matrix_copy:
+                #     print(r)
+                # print("\n")
 
                 matrix_copy = copy.deepcopy(matrix)
 
@@ -319,7 +352,7 @@ class Block(Rect):
                     optimal_move[1] = state
                     optimal_move[2] = step_number
 
-            for step_number in range(-1, -(self.starting_column+1), -1):   # steps to move LEFT
+            for step_number in range(-1, -(self.starting_column + 1), -1):  # steps to move LEFT
                 min_distance = math.inf
                 for coord in shape_variants.pos[state]:
                     # find the minimum distance to move
@@ -334,10 +367,10 @@ class Block(Rect):
 
                 score = self.score_matrix(matrix_copy, min_distance)
 
-                print("\nMatrix after one possible movement is: ")
-                for r in matrix_copy:
-                    print(r)
-                print("\n")
+                # print("\nMatrix after one possible movement is: ")
+                # for r in matrix_copy:
+                #     print(r)
+                # print("\n")
 
                 matrix_copy = copy.deepcopy(matrix)
 
@@ -356,34 +389,59 @@ class Block(Rect):
         for r in matrix:
             if set(r) == {1}:
                 row_cleared += 1
-        score += row_cleared * row_cleared
+        score += row_cleared
 
-        score_off = 0
+        score += move_distance
+
+        holes = 0
         for i in range(row - 1):
             for j in range(col):
                 if matrix[i][j] == 1:
                     try:
-                        for k in range(i+1, row):
+                        for k in range(i + 1, row):
                             if matrix[k][j] == 1:
                                 break
                             if matrix[k][j] == 0:
-                                score_off += 1
+                                holes += 1
                     except:
                         pass
-        print("score off: ", score_off)
-        score -= score_off
+        # print("# of holes: ", holes)
+        score -= 4 * holes
 
-        apex_list = []  # position i stores the row number of the highest block at column i.
-        for j in range(col):
-            try:
-                idx = [matrix[i][j] for i in range(len(matrix))].index(1)
-                apex_list.append(idx)
-            except ValueError:
-                apex_list.append(row)
-        apex_list = [row - i for i in apex_list]
-        std = statistics.stdev(apex_list)
-        print("std is ", std)
-        score -= std
+        # cumulative well (a well with depth N will have 1+2+3+...+N score)
+        well_sum = 0
+
+        depth = 0
+        for i in range(row):
+            if matrix[i][0] == 0 and matrix[i][1] == 1:
+                depth += 1
+                well_sum += depth
+            if matrix[i][0] == 1:
+                depth = 0
+
+        depth = 0
+        for i in range(row):
+            if matrix[i][col - 1] == 0 and matrix[i][col - 2] == 1:
+                depth += 1
+                well_sum += depth
+            if matrix[i][col - 1] == 1:
+                depth = 0
+
+        for c in range(1, col - 1):
+            depth = 0
+            for r in range(row):
+                if matrix[r][c] == 0 and matrix[r][c-1] == 1 and matrix[r][c+1] == 1:
+                    depth += 1
+                    well_sum += depth
+                else:
+                    depth = 0
+
+        score -= well_sum
+        if well_sum > 10:
+            print("Well sum: ", well_sum, "\nMatrix: ")
+            for r in matrix:
+                print(r)
+            print("\n")
 
         return score
 
@@ -394,7 +452,7 @@ class Block(Rect):
                 for item in self.shape:
                     item.move_ip(-block_size, 0)
                 self.curr_steps -= 1
-        elif self.steps > 0:    # moving right
+        elif self.steps > 0:  # moving right
             if self.curr_steps < self.steps:
                 for item in self.shape:
                     item.move_ip(block_size, 0)
@@ -415,10 +473,10 @@ class Block(Rect):
                 self.block4.move_ip(-block_size * 2, block_size)
                 self.state = 2
             else:
-                self.block1.move_ip(-block_size, block_size*2)
+                self.block1.move_ip(-block_size, block_size * 2)
                 self.block2.move_ip(0, block_size)
                 self.block3.move_ip(block_size, 0)
-                self.block4.move_ip(block_size*2, -block_size)
+                self.block4.move_ip(block_size * 2, -block_size)
                 self.state = 1
         elif self.type == "square":
             pass
@@ -478,10 +536,9 @@ curr_block = Block(block_list.pos_matrix)
 
 cleared_rows = pygame.font.SysFont('Arial', 30)
 
-
 while not done:
 
-    clock.tick(50)
+    clock.tick(100)
 
     for event in pygame.event.get():  # User did something
         if event.type == pygame.QUIT:  # If user clicked close
@@ -498,11 +555,11 @@ while not done:
         curr_block = Block(block_list.pos_matrix)
 
     curr_block.draw(screen)  # draw the falling block
-    block_list.draw_all(screen)     # draw the sitting blocks
+    block_list.draw_all(screen)  # draw the sitting blocks
     draw_separate_line(screen)
 
     text_surface = cleared_rows.render(str(block_list.total_row_cleared), False, (0, 0, 0))
-    screen.blit(text_surface, ((col+1) * block_size, block_size))
+    screen.blit(text_surface, ((col + 1) * block_size, block_size))
 
     pygame.display.flip()
 
