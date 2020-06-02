@@ -1,4 +1,5 @@
 import pygame
+import pygame.freetype
 import random
 from shape import Shape
 from pygame.rect import Rect
@@ -18,7 +19,7 @@ RED = (255, 0, 0)
 ORANGE = (255, 165, 0)
 
 # Set the height and width of the screen
-block_size = 20
+block_size = 15
 row, col = 20, 10
 color = BLUE
 size = [block_size * (col + 6), block_size * row]
@@ -108,7 +109,7 @@ class Block_List:
                 self.block_dict[coord][0].move_ip(0, block_size * steps_to_move)  # move the rectangle
                 new_coord = self.block_dict[coord][0].topleft
                 self.block_dict[new_coord] = (
-                self.block_dict[coord][0], self.block_dict[coord][1])  # reassign new positions
+                    self.block_dict[coord][0], self.block_dict[coord][1])  # reassign new positions
                 del self.block_dict[coord]  # delete old one
 
         # # move the blocks down after row-clearing
@@ -340,8 +341,8 @@ class Block(Rect):
                 score = self.score_matrix(matrix_copy, min_distance)
 
                 # print("\nMatrix after one possible movement is: ")
-                # for r in matrix_copy:
-                #     print(r)
+                # for idx, r in enumerate(matrix_copy):
+                #     print(f'{idx: > 5}', r)
                 # print("\n")
 
                 matrix_copy = copy.deepcopy(matrix)
@@ -368,8 +369,8 @@ class Block(Rect):
                 score = self.score_matrix(matrix_copy, min_distance)
 
                 # print("\nMatrix after one possible movement is: ")
-                # for r in matrix_copy:
-                #     print(r)
+                # for idx, r in enumerate(matrix_copy):
+                #     print(f'{idx: > 5}', r)
                 # print("\n")
 
                 matrix_copy = copy.deepcopy(matrix)
@@ -389,9 +390,10 @@ class Block(Rect):
         for r in matrix:
             if set(r) == {1}:
                 row_cleared += 1
-        score += row_cleared
+        score += row_cleared * row_cleared
 
-        score += move_distance
+        landing_height = row - move_distance
+        score -= landing_height
 
         holes = 0
         for i in range(row - 1):
@@ -430,18 +432,71 @@ class Block(Rect):
         for c in range(1, col - 1):
             depth = 0
             for r in range(row):
-                if matrix[r][c] == 0 and matrix[r][c-1] == 1 and matrix[r][c+1] == 1:
+                if matrix[r][c] == 0 and matrix[r][c - 1] == 1 and matrix[r][c + 1] == 1:
                     depth += 1
                     well_sum += depth
                 else:
                     depth = 0
-
         score -= well_sum
-        if well_sum > 10:
-            print("Well sum: ", well_sum, "\nMatrix: ")
-            for r in matrix:
-                print(r)
-            print("\n")
+        # if well_sum > 10:
+        #     print("Well sum: ", well_sum, "\nMatrix: ")
+        #     for r in matrix:
+        #         print(r)
+        #     print("\n")
+
+        #########################################################
+        # Row Transition #
+        row_transition = 0
+        for r in range(row):
+            if 1 in matrix[r]:
+                state = 1
+                for c in range(col):
+                    if matrix[r][c] == 0:
+                        curr_state = 0
+                        if curr_state != state:
+                            state = curr_state
+                            row_transition += 1
+                        if c == col - 1:
+                            row_transition += 1
+                    elif matrix[r][c] == 1:
+                        curr_state = 1
+                        if curr_state != state:
+                            state = curr_state
+                            row_transition += 1
+                # print(r, "cumulative transition: ", row_transition)
+        score -= row_transition
+        # print("row_transition is ", row_transition, "\nMatrix: ")
+        # for row_idx, r in enumerate(matrix):
+        #     print(f'{row_idx:>5}', ": ", r)
+        # print("\n")
+        #####################################################
+
+        #####################################################
+        # Column Transition #
+        col_transition = 0
+        for c in range(col):
+            state = 0
+            for r in range(row):
+                if matrix[r][c] == 1:
+                    curr_state = 1
+                    if curr_state != state:
+                        state = curr_state
+                        col_transition += 1
+                elif matrix[r][c] == 0:
+                    curr_state = 0
+                    if curr_state != state:
+                        state = curr_state
+                        col_transition += 1
+                    if r == row - 1:
+                        col_transition += 1
+        score -= col_transition
+        #####################################################
+        # print("cumulative col_transition is ", col_transition, "\nMatrix: ")
+        # for row_idx, r in enumerate(matrix):
+        #     print(f'{row_idx:>5}', ": ", r)
+        # print("\n")
+
+        score -= col_transition
 
         return score
 
@@ -534,7 +589,7 @@ clock = pygame.time.Clock()
 block_list = Block_List()
 curr_block = Block(block_list.pos_matrix)
 
-cleared_rows = pygame.font.SysFont('Arial', 30)
+font = pygame.freetype.SysFont('Arial', 20)
 
 while not done:
 
@@ -556,10 +611,10 @@ while not done:
 
     curr_block.draw(screen)  # draw the falling block
     block_list.draw_all(screen)  # draw the sitting blocks
-    draw_separate_line(screen)
+    draw_separate_line(screen)  # draw right edge
 
-    text_surface = cleared_rows.render(str(block_list.total_row_cleared), False, (0, 0, 0))
-    screen.blit(text_surface, ((col + 1) * block_size, block_size))
+    font.render_to(screen, ((col + 2) * block_size, block_size * 2),
+                   str(block_list.total_row_cleared), (0, 0, 0))
 
     pygame.display.flip()
 
